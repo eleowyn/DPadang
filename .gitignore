@@ -1,0 +1,25 @@
+# --- Python cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual environment ---
+venv/
+env/
+
+# --- Logs & backups ---
+*.log
+*.bak
+*.tmp
+
+# --- Uploads dari user (biar repo bersih) ---
+static/uploads/*
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- IDE files ---
+.vscode/
+.idea/
+.env
