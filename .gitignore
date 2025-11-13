@@ -14,6 +14,7 @@ env/
 
 # --- Uploads dari user (biar repo bersih) ---
 static/uploads/*
+static/gradcam/*
 
 # --- OS files ---
 .DS_Store
