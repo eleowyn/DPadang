@@ -188,6 +188,64 @@ def feedback_route():
         }), 500
 
 
+@app.route("/ask-llm", methods=["POST"])
+def ask_llm():
+    """Generate recipe, nutritional info, atau informasi lain tentang makanan menggunakan LLM
+    
+    Uses multiple backends:
+    1. Ollama (local, free, unlimited) - preferred
+    2. Hugging Face API (cloud, free tier 15k/month) - fallback
+    """
+    try:
+        from llm_provider import LLMProvider
+        
+        data = request.get_json()
+        food_name = data.get("food_name")
+        prompt = data.get("prompt")
+        
+        if not food_name or not prompt:
+            return jsonify({
+                "success": False,
+                "error": "Food name dan prompt diperlukan"
+            }), 400
+        
+        print(f"🤖 LLM Query - Food: {food_name}, Prompt: {prompt}")
+        
+        # Use LLM provider (tries Ollama first, then HF)
+        result = LLMProvider.ask_about_food(food_name, prompt)
+        
+        if result["success"]:
+            provider = result.get("provider", "unknown")
+            print(f"✅ LLM Response generated ({len(result['response'])} chars) via {provider}")
+            
+            return jsonify({
+                "success": True,
+                "response": result["response"],
+                "food_name": food_name,
+                "provider": provider
+            })
+        else:
+            error_msg = result.get("error", "Unknown error")
+            print(f"❌ LLM Error: {error_msg}")
+            
+            return jsonify({
+                "success": False,
+                "error": "LLM tidak tersedia saat ini. Pastikan Ollama berjalan atau setup Hugging Face API.",
+                "details": error_msg
+            }), 503
+    
+    except Exception as e:
+        error_msg = str(e)
+        print(f"❌ Unexpected error pada /ask-llm: {error_msg}")
+        traceback.print_exc()
+        
+        return jsonify({
+            "success": False,
+            "error": "Error saat memproses pertanyaan. Silakan coba lagi.",
+            "details": error_msg[:100]
+        }), 500
+
+
 # Serve static files
 @app.route('/static/<path:path>')
 def send_static(path):

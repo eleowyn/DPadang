@@ -3,184 +3,575 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🍛 Deteksi Makanan Padang AI</title>
+    <title>Deteksi Makanan Padang</title>
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
+
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: radial-gradient(
-          circle at center,
-          #ffd700 0%,
-          #ffa500 15%,
-          #ff8c00 30%,
-          #8b0000 60%,
-          #800020 100%
+        background: linear-gradient(
+          135deg,
+          #1a0f00 0%,
+          #2d1810 50%,
+          #1a0f00 100%
         );
         min-height: 100vh;
         display: flex;
         justify-content: center;
         align-items: center;
         padding: 20px;
-      }
-      .container {
-        background: #1a1a1a;
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(255, 0, 0, 0.3);
-        max-width: 600px;
-        width: 100%;
-        border: 1px solid #333;
-      }
-      h1 {
-        color: #ffffff;
-        text-align: center;
-        margin-bottom: 10px;
-        font-size: 28px;
-        font-weight: bold;
-      }
-      .subtitle {
-        text-align: center;
-        color: #cccccc;
-        margin-bottom: 30px;
-        font-size: 14px;
-      }
-      .upload-area {
-        border: 3px dashed #ff3333;
-        border-radius: 15px;
-        padding: 40px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s;
-        background: #2a2a2a;
-      }
-      .upload-area:hover {
-        background: #333333;
-        border-color: #ffaa00;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 20px rgba(255, 170, 0, 0.3);
-      }
-      .upload-area p {
-        color: #ff6666;
-        font-size: 16px;
-        font-weight: 500;
-      }
-      .upload-icon {
-        font-size: 48px;
-        margin-bottom: 10px;
+        position: relative;
+        overflow: hidden;
       }
 
-      /* GradCAM Checkbox Styling */
-      .gradcam-option {
-        background: #2a2a2a;
-        padding: 15px;
-        border-radius: 10px;
-        margin-top: 15px;
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(
+            circle at 20% 30%,
+            rgba(255, 140, 0, 0.15) 0%,
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at 80% 70%,
+            rgba(255, 69, 0, 0.12) 0%,
+            transparent 40%
+          );
+        animation: backgroundPulse 15s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      @keyframes backgroundPulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .container {
+        background: rgba(30, 30, 30, 0.95);
+        border-radius: 30px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9),
+          0 0 60px rgba(255, 140, 0, 0.3);
+        max-width: 1600px;
+        width: 100%;
+        max-height: 95vh;
+        border: 1px solid rgba(255, 140, 0, 0.3);
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        padding: 40px 50px;
+        background: linear-gradient(
+          135deg,
+          rgba(60, 35, 20, 0.8) 0%,
+          rgba(40, 25, 15, 0.8) 100%
+        );
+        border-bottom: 2px solid rgba(255, 140, 0, 0.4);
+        flex-shrink: 0;
+      }
+
+      .header-content {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        border: 1px solid #333;
+        gap: 20px;
+        flex-direction: column;
       }
-      .gradcam-option label {
-        color: #ffffff;
-        font-size: 14px;
-        cursor: pointer;
+
+      .logo {
+        display: none;
+      }
+
+      h1 {
+        background: linear-gradient(
+          135deg,
+          #ff8c00 0%,
+          #ff6b00 50%,
+          #ff4500 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 48px;
+        font-weight: 800;
+        letter-spacing: -1px;
+      }
+
+      .subtitle {
+        color: #999;
+        font-size: 16px;
+        margin-top: 8px;
+        text-align: center;
+      }
+
+      .content-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 40px 50px;
+      }
+
+      .content-wrapper::-webkit-scrollbar {
+        width: 12px;
+      }
+
+      .content-wrapper::-webkit-scrollbar-track {
+        background: rgba(255, 140, 0, 0.05);
+        border-radius: 10px;
+      }
+
+      .content-wrapper::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #ff8c00 0%, #ff6b00 100%);
+        border-radius: 10px;
+      }
+
+      .split-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .panel {
+        background: linear-gradient(
+          145deg,
+          rgba(40, 40, 40, 0.6) 0%,
+          rgba(30, 30, 30, 0.6) 100%
+        );
+        border-radius: 25px;
+        padding: 35px;
+        border: 2px solid rgba(255, 140, 0, 0.3);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      .panel-header {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 0px;
+        margin-bottom: 30px;
       }
-      .gradcam-option input[type="checkbox"] {
-        width: 20px;
-        height: 20px;
+
+      .panel-icon {
+        display: none;
+      }
+
+      .panel-title {
+        font-size: 26px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .upload-area {
+        border: 4px dashed rgba(255, 140, 0, 0.5);
+        border-radius: 25px;
+        padding: 40px 40px;
+        text-align: center;
         cursor: pointer;
-        accent-color: #ff3333;
+        transition: all 0.4s ease;
+        background: linear-gradient(
+          145deg,
+          rgba(255, 140, 0, 0.05) 0%,
+          rgba(255, 69, 0, 0.05) 100%
+        );
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 25px;
+        justify-content: center;
+      }
+
+      .upload-area:hover {
+        background: linear-gradient(
+          145deg,
+          rgba(255, 140, 0, 0.12) 0%,
+          rgba(255, 69, 0, 0.12) 100%
+        );
+        border-color: #ff8c00;
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(255, 140, 0, 0.4);
+      }
+
+      .upload-logo {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(
+          135deg,
+          #ff8c00 0%,
+          #ff6b00 50%,
+          #ff4500 100%
+        );
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 50px;
+        box-shadow: 0 15px 50px rgba(255, 140, 0, 0.6);
+        animation: float 3s ease-in-out infinite;
+        flex-shrink: 0;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-15px);
+        }
+      }
+
+      .upload-text {
+        background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      .upload-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        min-height: 100px;
+        margin-left: 0;
+      }
+
+      .upload-hint {
+        color: #888;
+        font-size: 15px;
       }
 
       #preview {
-        max-width: 100%;
+        width: 100%;
         max-height: 400px;
-        margin-top: 20px;
-        border-radius: 10px;
+        object-fit: contain;
+        border-radius: 20px;
         display: none;
-        box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
-        border: 2px solid #333;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7),
+          0 0 40px rgba(255, 140, 0, 0.4);
+        border: 3px solid rgba(255, 140, 0, 0.5);
+        margin-bottom: 20px;
       }
-      #results {
-        margin-top: 20px;
-      }
-      .results-title {
-        font-size: 20px;
-        font-weight: bold;
-        color: #ffffff;
-        margin-bottom: 15px;
-        text-align: center;
-      }
-      .prediction {
-        background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
-        padding: 15px 20px;
-        margin: 10px 0;
-        border-radius: 10px;
-        transition: all 0.3s;
-        border: 2px solid #333;
-      }
-      .prediction:hover {
-        transform: translateX(5px);
-        border-color: #ff3333;
-        box-shadow: 0 3px 10px rgba(255, 51, 51, 0.3);
-      }
-      .prediction:first-child {
+
+      button {
         background: linear-gradient(
           135deg,
-          #ff0000 0%,
-          #330000 50%,
-          #ffaa00 100%
+          #ff8c00 0%,
+          #ff6b00 50%,
+          #ff4500 100%
         );
         color: white;
-        border-color: #ff6666;
+        border: none;
+        padding: 20px 45px;
+        border-radius: 18px;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: 700;
+        width: 100%;
+        margin-top: 25px;
+        transition: all 0.4s ease;
+        box-shadow: 0 10px 35px rgba(255, 140, 0, 0.6);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
-      .prediction-header {
+
+      button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 45px rgba(255, 140, 0, 0.8);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 22px;
+        height: 22px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 2.5px solid rgba(200, 200, 200, 0.3);
+        border-radius: 50%;
+        border-top-color: #333;
+        border-right-color: #555;
+        animation: spin 1.2s linear infinite;
+        opacity: 1;
+        margin-right: 8px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .info-box {
+        background: linear-gradient(
+          145deg,
+          rgba(255, 140, 0, 0.15) 0%,
+          rgba(255, 69, 0, 0.08) 100%
+        );
+        border-left: 6px solid #ff8c00;
+        padding: 18px 22px;
+        border-radius: 14px;
+        font-size: 14px;
+        color: #d8d8d8;
+        display: none;
+        margin-top: 15px;
+      }
+
+      .info-box strong {
+        color: #ff8c00;
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 30px;
+        text-align: center;
+      }
+
+      .empty-logo {
+        width: 30px;
+        height: 30px;
+        background: transparent;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 60px;
+        margin: 0;
+        opacity: 1;
+        border: none;
+        flex-shrink: 0;
+      }
+
+      .empty-logo.loading-spinner {
+        background: transparent;
+        opacity: 1;
+        border: none;
+      }
+
+      .result-loading {
+        border: 4px solid rgba(255, 140, 0, 0.3);
+        border-radius: 20px;
+        padding: 20px 30px;
+        background: linear-gradient(
+          145deg,
+          rgba(255, 140, 0, 0.08) 0%,
+          rgba(255, 69, 0, 0.05) 100%
+        );
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0px;
+        justify-content: flex-start;
+      }
+
+      .empty-text {
+        font-size: 15px;
+        color: #999;
+        line-height: 1.5;
+      }
+
+      .results-header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 25px;
+        padding: 25px;
+        background: linear-gradient(
+          145deg,
+          rgba(255, 140, 0, 0.15) 0%,
+          rgba(255, 69, 0, 0.08) 100%
+        );
+        border-radius: 18px;
+        border: 1px solid rgba(255, 140, 0, 0.3);
+      }
+
+      .results-logo {
+        width: 65px;
+        height: 65px;
+        background: linear-gradient(
+          135deg,
+          #ff8c00 0%,
+          #ff6b00 50%,
+          #ff4500 100%
+        );
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        box-shadow: 0 8px 25px rgba(255, 140, 0, 0.5);
+      }
+
+      .results-info h3 {
+        color: #ff8c00;
+        font-size: 22px;
+        margin-bottom: 5px;
+      }
+
+      .results-info p {
+        color: #999;
+        font-size: 14px;
+      }
+
+      .prediction {
+        background: linear-gradient(
+          145deg,
+          rgba(45, 45, 45, 0.7) 0%,
+          rgba(35, 35, 35, 0.7) 100%
+        );
+        padding: 25px;
+        margin: 15px 0;
+        border-radius: 18px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 10px;
+        transition: all 0.4s ease;
+        border: 1px solid rgba(255, 140, 0, 0.2);
+        position: relative;
       }
+
+      .prediction::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 5px;
+        background: linear-gradient(180deg, #ff8c00 0%, #ff4500 100%);
+        transform: scaleY(0);
+        transition: transform 0.4s ease;
+        border-radius: 18px 0 0 18px;
+      }
+
+      .prediction:hover::before {
+        transform: scaleY(1);
+      }
+
+      .prediction:hover {
+        transform: translateX(8px);
+        border-color: rgba(255, 140, 0, 0.5);
+        box-shadow: 0 10px 35px rgba(255, 140, 0, 0.4);
+      }
+
+      .prediction:first-child {
+        background: linear-gradient(
+          135deg,
+          #ff8c00 0%,
+          #ff6b00 50%,
+          #ff4500 100%
+        );
+        border: none;
+        box-shadow: 0 12px 45px rgba(255, 140, 0, 0.7);
+      }
+
+      .prediction:first-child .prediction-name,
+      .prediction:first-child .confidence,
+      .prediction:first-child .prediction-rank {
+        color: white;
+      }
+
       .prediction-rank {
-        font-size: 24px;
+        font-size: 38px;
         font-weight: bold;
-        margin-right: 15px;
-        opacity: 0.7;
+        margin-right: 20px;
       }
+
       .prediction-name {
         flex: 1;
         font-size: 18px;
-        font-weight: 500;
-        color: #ffffff;
+        font-weight: 600;
+        color: #e8e8e8;
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
+
       .confidence {
-        font-weight: bold;
-        color: #ff6666;
-        font-size: 18px;
+        font-weight: 700;
+        font-size: 16px;
+        background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        flex-shrink: 0;
       }
+
       .prediction:first-child .confidence {
-        color: white;
+        -webkit-text-fill-color: white;
+        background: none;
       }
+
       .confidence-bar {
         width: 100%;
-        height: 6px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 3px;
-        margin-top: 8px;
+        height: 8px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 5px;
+        margin-top: 12px;
         overflow: hidden;
       }
+
       .confidence-fill {
         height: 100%;
-        background: white;
-        border-radius: 3px;
-        transition: width 0.5s ease;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.95) 0%,
+          rgba(255, 255, 255, 0.75) 100%
+        );
+        border-radius: 5px;
+        transition: width 0.8s ease;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+      }
+
+      .error {
+        background: linear-gradient(
+          145deg,
+          rgba(255, 69, 0, 0.3) 0%,
+          rgba(139, 0, 0, 0.3) 100%
+        );
+        color: #ff8c8c;
+        padding: 20px;
+        border-radius: 16px;
+        margin-top: 20px;
+        text-align: center;
+        border: 1px solid rgba(255, 69, 0, 0.6);
       }
 
       /* GradCAM Image Styling */
@@ -203,139 +594,364 @@
         font-weight: 500;
       }
 
-      button {
-        background: linear-gradient(
-          135deg,
-          #ff0000 0%,
-          #330000 50%,
-          #ffaa00 100%
-        );
-        color: white;
-        border: none;
-        padding: 15px 30px;
-        border-radius: 10px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: 600;
-        width: 100%;
-        margin-top: 20px;
-        transition: all 0.3s;
-        border: 1px solid #ff3333;
-      }
-      button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
-      }
-      button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
-      }
-      .loading {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: white;
-        animation: spin 1s ease-in-out infinite;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .error {
-        background: #331111;
-        color: #ff6666;
-        padding: 15px;
-        border-radius: 10px;
-        margin-top: 20px;
-        text-align: center;
-        border: 1px solid #ff3333;
-      }
-      .info-box {
-        background: #2a2a1a;
-        border-left: 4px solid #ffaa00;
-        padding: 12px 15px;
-        margin-top: 20px;
-        border-radius: 5px;
-        font-size: 14px;
-        color: #ffcc66;
-      }
+      /* Feedback and LLM Styles */
       .feedback-buttons {
-        text-align: center;
+        display: flex;
+        gap: 15px;
         margin-top: 20px;
+        justify-content: center;
+        flex-direction: row;
       }
-      .feedback-buttons p {
-        color: #cccccc;
-        margin-bottom: 10px;
-      }
+
       .feedback-buttons button {
         width: auto;
-        margin: 5px 10px;
+        padding: 12px 24px;
+        margin-top: 0;
+        font-size: 16px;
       }
+
       #feedbackResponse {
-        margin-top: 10px;
-        color: #ffcc66;
+        margin-top: 15px;
+        text-align: center;
+        color: #ff8c00;
+        font-weight: 600;
+      }
+
+      .llm-section {
+        background: linear-gradient(
+          145deg,
+          rgba(255, 140, 0, 0.1) 0%,
+          rgba(255, 69, 0, 0.05) 100%
+        );
+        border: 2px solid rgba(255, 140, 0, 0.3);
+        padding: 25px;
+        border-radius: 18px;
+        margin-top: 30px;
+        display: block;
+        opacity: 0.5;
+        pointer-events: none;
+        position: relative;
+      }
+
+      .llm-section.disabled-overlay::before {
+        content: "Akan tersedia setelah upload foto";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(30, 30, 30, 0.95);
+        color: #ff8c00;
+        padding: 15px 25px;
+        border-radius: 10px;
+        font-weight: 600;
+        text-align: center;
+        z-index: 10;
+        white-space: nowrap;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
+        opacity: 0.8;
+      }
+
+      .llm-section.disabled-overlay[data-blocked-reason="bukan_makanan"]::before {
+        content: "Fitur tidak tersedia";
+        color: #ff8c8c;
+      }
+
+      .llm-section.active {
+        opacity: 1;
+        pointer-events: auto;
+        animation: slideDown 0.3s ease-out;
+      }
+
+      .llm-section.active::before {
+        content: none;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .llm-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #ff8c00;
+        margin-bottom: 15px;
+      }
+
+      .llm-prompt-box {
+        background: rgba(50, 50, 50, 0.5);
+        border: 1px solid rgba(255, 140, 0, 0.2);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+
+      .llm-prompt-box label {
+        display: block;
+        color: #d8d8d8;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .llm-prompt-box textarea {
+        width: 100%;
+        padding: 12px;
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid rgba(255, 140, 0, 0.2);
+        color: #ffffff;
+        border-radius: 8px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .llm-prompt-box textarea:focus {
+        outline: none;
+        border-color: #ff8c00;
+        box-shadow: 0 0 10px rgba(255, 140, 0, 0.3);
+      }
+
+      .llm-preset-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .preset-btn {
+        background: linear-gradient(
+          145deg,
+          rgba(255, 140, 0, 0.15) 0%,
+          rgba(255, 69, 0, 0.1) 100%
+        );
+        border: 1px solid rgba(255, 140, 0, 0.3);
+        color: #ff8c00;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.3s;
+      }
+
+      .preset-btn:hover {
+        background: linear-gradient(
+          145deg,
+          rgba(255, 140, 0, 0.25) 0%,
+          rgba(255, 69, 0, 0.15) 100%
+        );
+        border-color: #ff8c00;
+        transform: translateY(-2px);
+      }
+
+      #llmResponse {
+        background: linear-gradient(
+          145deg,
+          rgba(40, 40, 40, 0.7) 0%,
+          rgba(35, 35, 35, 0.7) 100%
+        );
+        border-left: 5px solid #ff8c00;
+        padding: 20px;
+        border-radius: 12px;
+        margin-top: 15px;
+        color: #d8d8d8;
+        line-height: 1.7;
+        display: none;
+      }
+
+      #llmResponse.active {
+        display: block;
+      }
+
+      @media (max-width: 1200px) {
+        .split-container {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 36px;
+        }
       }
     </style>
   </head>
 
   <body>
     <div class="container">
-      <h1>🍛 Deteksi Makanan Padang</h1>
-      <p class="subtitle">
-        Upload foto makanan untuk mendeteksi jenis makanan Padang
-      </p>
-
-      <div
-        class="upload-area"
-        onclick="document.getElementById('fileInput').click()"
-      >
-        <div class="upload-icon">📸</div>
-        <p>Klik atau drag & drop gambar di sini</p>
-        <small style="color: #999; display: block; margin-top: 10px"
-          >Format: JPG, JPEG, PNG (Max: 16MB)</small
-        >
-        <input
-          type="file"
-          id="fileInput"
-          accept="image/*"
-          style="display: none"
-        />
+      <div class="header">
+        <div class="header-content">
+          <div class="logo"></div>
+          <div>
+            <h1>Deteksi Makanan Padang</h1>
+            <p class="subtitle">
+              Powered by AI • Upload foto untuk mendeteksi jenis makanan Padang
+            </p>
+          </div>
+        </div>
       </div>
 
-      <!-- GradCAM is automatically enabled -->
+      <div class="content-wrapper">
+        <div class="split-container">
+          <!-- Left Panel: Upload & LLM -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-icon"></div>
+              <div class="panel-title">Upload Gambar</div>
+            </div>
 
-      <img id="preview" alt="Preview" />
-      <button onclick="uploadImage()" style="display: none" id="uploadBtn">
-        🔍 Deteksi Makanan
-      </button>
-      <div id="results"></div>
+            <div
+              class="upload-area"
+              id="uploadArea"
+              onclick="document.getElementById('fileInput').click()"
+            >
+              <div class="upload-logo">📸</div>
+              <div class="upload-content">
+                <div class="upload-text">Klik atau Drag & Drop</div>
+                <div class="upload-hint">JPG, JPEG, PNG (Max: 16MB)</div>
+              </div>
+              <input
+                type="file"
+                id="fileInput"
+                accept="image/*"
+                style="display: none"
+              />
+            </div>
+            <img id="preview" alt="Preview" />
 
-      <div class="feedback-buttons" id="feedbackSection" style="display: none">
-        <p>Apakah prediksi ini benar?</p>
-        <button onclick="sendFeedback(true)">✅ YA</button>
-        <button onclick="sendFeedback(false)">❌ TIDAK</button>
-        <div id="feedbackResponse"></div>
-      </div>
+            <button
+              onclick="uploadImage()"
+              style="display: none"
+              id="uploadBtn"
+            >
+              Deteksi Makanan
+            </button>
 
-      <div class="info-box" style="display: none" id="infoBox">
-        💡 <strong>Tips:</strong> GradCAM akan menampilkan area yang dilihat AI
-        saat membuat prediksi. Proses ini membutuhkan waktu lebih lama.
+            <div class="info-box" id="infoBox">
+              <strong>Tips:</strong> Gunakan foto yang jelas dan fokus pada
+              makanan untuk hasil terbaik
+            </div>
+
+            <!-- LLM Section -->
+            <div class="llm-section disabled-overlay" id="llmSection">
+              <div class="llm-title">Tanya Tentang Makanan</div>
+
+              <div class="llm-prompt-box">
+                <label
+                  >Pilih pertanyaan cepat atau ketik pertanyaan Anda:</label
+                >
+                <div class="llm-preset-buttons">
+                  <button
+                    class="preset-btn"
+                    onclick="askPreset('Berikan resep lengkap untuk membuat makanan ini')"
+                  >
+                    Resep
+                  </button>
+                  <button
+                    class="preset-btn"
+                    onclick="askPreset('Berikan informasi nilai gizi lengkap dari makanan ini')"
+                  >
+                    Nutrisi
+                  </button>
+                  <button
+                    class="preset-btn"
+                    onclick="askPreset('Sejarah dan asal usul makanan ini')"
+                  >
+                    Sejarah
+                  </button>
+                  <button
+                    class="preset-btn"
+                    onclick="askPreset('Tips memasak dan variasi dari makanan ini')"
+                  >
+                    Tips Memasak
+                  </button>
+                </div>
+
+                <label>Atau ketik pertanyaan kustom:</label>
+                <textarea
+                  id="llmPrompt"
+                  placeholder="Contoh: Apa saja manfaat kesehatan dari makanan ini?"
+                ></textarea>
+
+                <button
+                  id="queryBtn"
+                  onclick="sendLLMQuery()"
+                  style="margin-top: 10px; width: 100%"
+                >
+                  Tanya AI
+                </button>
+              </div>
+
+              <div id="llmResponse"></div>
+            </div>
+          </div>
+
+          <!-- Right Panel: Results -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-icon"></div>
+              <div class="panel-title">Hasil Deteksi</div>
+            </div>
+
+            <div id="results">
+              <div class="empty-state">
+                <div class="empty-logo"></div>
+                <div class="empty-text">
+                  Belum ada hasil deteksi<br />
+                  Upload gambar untuk memulai analisis AI
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="feedbackSection"
+              style="
+                display: none;
+                margin-top: 30px;
+                flex-direction: column;
+                align-items: center;
+              "
+            >
+              <div
+                style="
+                  color: #999;
+                  font-size: 16px;
+                  margin-bottom: 20px;
+                  font-weight: 500;
+                "
+              >
+                Apakah hasil prediksi ini benar?
+              </div>
+              <div class="feedback-buttons">
+                <button onclick="sendFeedback(true)">Benar</button>
+                <button onclick="sendFeedback(false)">Salah</button>
+              </div>
+            </div>
+
+            <div id="feedbackResponse"></div>
+          </div>
+        </div>
       </div>
     </div>
 
     <script>
       const fileInput = document.getElementById("fileInput");
       const preview = document.getElementById("preview");
+      const uploadArea = document.getElementById("uploadArea");
       const uploadBtn = document.getElementById("uploadBtn");
       const results = document.getElementById("results");
       const infoBox = document.getElementById("infoBox");
       const feedbackSection = document.getElementById("feedbackSection");
       const feedbackResponse = document.getElementById("feedbackResponse");
-      const gradcamCheckbox = document.getElementById("gradcamCheckbox");
+      const llmSection = document.getElementById("llmSection");
+      const llmPrompt = document.getElementById("llmPrompt");
+      const llmResponse = document.getElementById("llmResponse");
 
       let lastPrediction = null;
       let lastImagePath = null;
@@ -345,17 +961,27 @@
         const file = e.target.files[0];
         if (file) {
           if (file.size > 16 * 1024 * 1024) {
-            alert("⚠️ Ukuran file terlalu besar! Maksimal 16MB");
+            alert("Ukuran file terlalu besar! Maksimal 16MB");
             return;
           }
           const reader = new FileReader();
           reader.onload = function (e) {
             preview.src = e.target.result;
             preview.style.display = "block";
+            uploadArea.style.display = "none";
             uploadBtn.style.display = "block";
             infoBox.style.display = "block";
-            results.innerHTML = "";
+            results.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-logo"></div>
+                <div class="empty-text">
+                  Gambar siap dideteksi<br>
+                  Klik tombol "Deteksi Makanan"
+                </div>
+              </div>
+            `;
             feedbackSection.style.display = "none";
+            hideLLMSection();
           };
           reader.readAsDataURL(file);
         }
@@ -363,83 +989,147 @@
 
       async function uploadImage() {
         const file = fileInput.files[0];
-        if (!file) return alert("⚠️ Pilih gambar terlebih dahulu!");
+        if (!file) {
+          alert("Pilih gambar terlebih dahulu!");
+          return;
+        }
 
         const formData = new FormData();
         formData.append("image", file);
-
         // Always include GradCAM
         formData.append("gradcam", "true");
 
         uploadBtn.innerHTML =
-          '<span class="loading"></span> Mendeteksi dengan GradCAM...';
+          '<div class="loading-spinner" style="margin: 0 auto;"></div> Mendeteksi...';
         uploadBtn.disabled = true;
-        results.innerHTML = "";
+        results.innerHTML = `
+          <div class="result-loading">
+            <div class="loading-spinner"></div>
+            <span class="empty-text">Sedang menganalisis gambar...</span>
+          </div>
+        `;
         feedbackSection.style.display = "none";
+        hideLLMSection();
 
         try {
           const response = await fetch("/predict", {
             method: "POST",
             body: formData,
           });
+
           const data = await response.json();
 
           if (data.success) {
             displayResults(data.predictions, true);
             lastPrediction = data.predictions[0].class;
             lastImagePath = data.image_path;
-            feedbackSection.style.display = "block";
           } else {
-            results.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+            results.innerHTML = `<div class="error">${data.error}</div>`;
+            hideLLMSection();
           }
-        } catch (err) {
-          results.innerHTML = `<div class="error">❌ ${err.message}</div>`;
+        } catch (error) {
+          results.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+          hideLLMSection();
         }
 
-        uploadBtn.innerHTML = "🔍 Deteksi Makanan";
+        uploadBtn.innerHTML = "Deteksi Makanan";
         uploadBtn.disabled = false;
       }
 
       function displayResults(predictions, showGradcam) {
-        results.innerHTML = '<div class="results-title">📊 Hasil Deteksi</div>';
-        predictions.forEach((pred, i) => {
+        let html = `
+          <div class="results-header">
+            <div class="results-info">
+              <h3>Terdeteksi ${predictions.length} Hasil</h3>
+              <p>Diurutkan berdasarkan tingkat akurasi tertinggi</p>
+            </div>
+          </div>
+        `;
+
+        predictions.forEach((pred, idx) => {
           const percentage = (pred.confidence * 100).toFixed(1);
-          const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉";
+          const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : "🥉";
 
           let gradcamHtml = "";
           if (showGradcam && pred.gradcam_path) {
             gradcamHtml = `
               <div class="gradcam-image">
                 <img src="${pred.gradcam_path}" alt="GradCAM ${pred.class}" />
-                <div class="gradcam-label">🔥 Area fokus AI</div>
+                <div class="gradcam-label">Area fokus AI</div>
               </div>
             `;
           }
 
-          results.innerHTML += `
+          html += `
             <div class="prediction">
-              <div class="prediction-header">
-                <span class="prediction-rank">${medal}</span>
-                <div style="flex:1">
-                  <div class="prediction-name">${pred.class}</div>
-                  ${
-                    i === 0
-                      ? `<div class="confidence-bar"><div class="confidence-fill" style="width:${percentage}%"></div></div>`
-                      : ""
-                  }
+              <span class="prediction-rank">${medal}</span>
+              <div style="flex: 1;">
+                <div class="prediction-name">
+                  ${pred.class}
+                  <span class="confidence" style="font-size: 18px; font-weight: bold;">${percentage}%</span>
                 </div>
-                <span class="confidence">${percentage}%</span>
+                ${
+                  idx === 0
+                    ? `<div class="confidence-bar"><div class="confidence-fill" style="width: ${percentage}%"></div></div>`
+                    : ""
+                }
+                ${gradcamHtml}
               </div>
-              ${gradcamHtml}
-            </div>`;
+            </div>
+          `;
         });
+
+        results.innerHTML = html;
+
+        // Show feedback section
+        const feedbackSection = document.getElementById("feedbackSection");
+        feedbackSection.style.display = "flex";
+
+        // Check if top result is "bukan_makanan"
+        if (
+          predictions.length > 0 &&
+          (predictions[0].class === "bukan_makanan" ||
+            predictions[0].class === "Bukan Makanan")
+        ) {
+          // Block LLM section completely
+          llmSection.classList.add("disabled-overlay");
+          llmSection.classList.remove("active");
+          llmSection.setAttribute("data-blocked-reason", "bukan_makanan");
+
+          // Add message to LLM response area
+          llmResponse.classList.add("active");
+          llmResponse.innerHTML = `
+            <div style="color: #ff8c8c; font-size: 14px; text-align: center; padding: 15px; background: rgba(255, 140, 0, 0.1); border-radius: 8px; border-left: 4px solid #ff8c8c;">
+              ⚠️ Deteksi menunjukkan ini bukan makanan Padang. Fitur Tanya Makanan tidak tersedia untuk item ini.
+            </div>
+          `;
+          // Disable all inputs in LLM section
+          llmPrompt.disabled = true;
+          const queryBtn = document.getElementById("queryBtn");
+          if (queryBtn) queryBtn.disabled = true;
+          document
+            .querySelectorAll(".preset-btn")
+            .forEach((btn) => (btn.disabled = true));
+        } else {
+          // Enable LLM section
+          llmSection.classList.remove("disabled-overlay");
+          llmSection.classList.add("active");
+          llmSection.removeAttribute("data-blocked-reason");
+          llmPrompt.disabled = false;
+          const queryBtn = document.getElementById("queryBtn");
+          if (queryBtn) queryBtn.disabled = false;
+          document
+            .querySelectorAll(".preset-btn")
+            .forEach((btn) => (btn.disabled = false));
+          llmResponse.innerHTML = "";
+          llmResponse.classList.remove("active");
+        }
       }
 
       async function sendFeedback(isCorrect) {
         let correctLabel = lastPrediction;
 
         if (!isCorrect) {
-          // Automatically set to "bukan_makanan" without prompting
           correctLabel = "bukan_makanan";
           console.log("Auto-labeled as: bukan_makanan");
         }
@@ -456,11 +1146,160 @@
             }),
           });
           const data = await response.json();
-          feedbackResponse.innerText = "✅ " + data.message;
+          feedbackResponse.innerText = "Success: " + data.message;
         } catch (err) {
-          feedbackResponse.innerText = "❌ Error: " + err.message;
+          feedbackResponse.innerText = "Error: " + err.message;
         }
       }
+
+      function askPreset(question) {
+        llmPrompt.value = question;
+        llmPrompt.scrollIntoView({ behavior: "smooth" });
+        llmPrompt.focus();
+      }
+
+      async function sendLLMQuery() {
+        const queryBtn = document.getElementById("queryBtn");
+
+        // Check if button is disabled and prevent execution
+        if (queryBtn && queryBtn.disabled) {
+          return;
+        }
+
+        const prompt = llmPrompt.value.trim();
+
+        if (!prompt) {
+          alert("Silakan masukkan pertanyaan Anda!");
+          return;
+        }
+
+        if (!lastPrediction) {
+          alert("Silakan deteksi makanan terlebih dahulu!");
+          return;
+        }
+
+        // Check if prediction is bukan_makanan
+        if (
+          lastPrediction === "bukan_makanan" ||
+          lastPrediction === "Bukan Makanan"
+        ) {
+          llmResponse.classList.add("active");
+          llmResponse.innerHTML = `
+            <div style="color: #ff8c8c; font-size: 14px; text-align: center; padding: 15px; background: rgba(255, 140, 140, 0.1); border-radius: 10px; border-left: 4px solid #ff8c8c;">
+              ⚠️ Fitur ini tidak tersedia untuk item yang bukan makanan Padang!
+            </div>
+          `;
+          return;
+        }
+
+        queryBtn.disabled = true;
+        queryBtn.innerHTML = '<span class="loading"></span> Menganalisis...';
+        llmResponse.innerHTML = "";
+        llmResponse.classList.remove("active");
+
+        try {
+          const response = await fetch("/ask-llm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              food_name: lastPrediction,
+              prompt: prompt,
+            }),
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            const formatted = data.response
+              .replace(/\n\n/g, "</p><p>")
+              .replace(/\n- /g, "<br>• ")
+              .replace(/\n\d+\. /g, "<br>");
+
+            llmResponse.innerHTML = `
+              <div style="color: #ff8c00; font-weight: bold; margin-bottom: 10px;">
+                Jawaban untuk: ${data.food_name}
+              </div>
+              <p>${formatted}</p>
+            `;
+            llmResponse.classList.add("active");
+
+            llmResponse.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+            });
+          } else {
+            if (data.quota_exceeded) {
+              llmResponse.innerHTML = `
+                <div style="color: #ff9999; background: rgba(255, 69, 0, 0.3); padding: 15px; border-radius: 5px; border-left: 4px solid rgba(255, 140, 0, 0.6);">
+                  <div style="font-weight: bold; margin-bottom: 8px;">Quota API Terlampaui</div>
+                  <div style="font-size: 14px; line-height: 1.6;">
+                    ${data.error}
+                    <br><br>
+              <strong>💡 Solusi:</strong><br>
+                    • Tunggu beberapa menit sebelum mencoba lagi<br>
+                    • Atau upgrade ke API plan berbayar<br>
+                    • Atau gunakan free tier dengan request yang lebih sedikit
+                  </div>
+                </div>
+              `;
+            } else {
+              llmResponse.innerHTML = `<div style="color: #ff8c8c;">Error: ${data.error}</div>`;
+            }
+            llmResponse.classList.add("active");
+          }
+        } catch (err) {
+          llmResponse.innerHTML = `<div style="color: #ff8c8c;">Error: ${err.message}</div>`;
+          llmResponse.classList.add("active");
+        }
+
+        queryBtn.disabled = false;
+        queryBtn.innerHTML = "Tanya AI";
+      }
+
+      function showLLMSection() {
+        llmSection.classList.remove("disabled-overlay");
+        llmSection.classList.add("active");
+        llmPrompt.value = "";
+        llmResponse.classList.remove("active");
+        llmResponse.innerHTML = "";
+      }
+
+      function hideLLMSection() {
+        llmSection.classList.remove("active");
+        llmSection.classList.add("disabled-overlay");
+      }
+
+      // Drag and drop support
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        uploadArea.addEventListener(eventName, () => {
+          uploadArea.style.borderColor = "#ff8c00";
+          uploadArea.style.transform = "translateY(-5px)";
+        });
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        uploadArea.addEventListener(eventName, () => {
+          uploadArea.style.borderColor = "rgba(255, 140, 0, 0.5)";
+          uploadArea.style.transform = "translateY(0)";
+        });
+      });
+
+      uploadArea.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        fileInput.files = files;
+
+        const event = new Event("change");
+        fileInput.dispatchEvent(event);
+      });
     </script>
   </body>
 </html>
