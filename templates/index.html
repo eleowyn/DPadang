@@ -72,6 +72,34 @@
         font-size: 48px;
         margin-bottom: 10px;
       }
+
+      /* GradCAM Checkbox Styling */
+      .gradcam-option {
+        background: #2a2a2a;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: 1px solid #333;
+      }
+      .gradcam-option label {
+        color: #ffffff;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .gradcam-option input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #ff3333;
+      }
+
       #preview {
         max-width: 100%;
         max-height: 400px;
@@ -96,9 +124,6 @@
         padding: 15px 20px;
         margin: 10px 0;
         border-radius: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
         transition: all 0.3s;
         border: 2px solid #333;
       }
@@ -117,8 +142,11 @@
         color: white;
         border-color: #ff6666;
       }
-      .prediction:first-child .confidence {
-        color: white;
+      .prediction-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
       }
       .prediction-rank {
         font-size: 24px;
@@ -137,6 +165,9 @@
         color: #ff6666;
         font-size: 18px;
       }
+      .prediction:first-child .confidence {
+        color: white;
+      }
       .confidence-bar {
         width: 100%;
         height: 6px;
@@ -151,6 +182,27 @@
         border-radius: 3px;
         transition: width 0.5s ease;
       }
+
+      /* GradCAM Image Styling */
+      .gradcam-image {
+        margin-top: 15px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid #444;
+      }
+      .gradcam-image img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .gradcam-label {
+        text-align: center;
+        color: #ffaa00;
+        font-size: 12px;
+        margin-top: 5px;
+        font-weight: 500;
+      }
+
       button {
         background: linear-gradient(
           135deg,
@@ -254,6 +306,8 @@
         />
       </div>
 
+      <!-- GradCAM is automatically enabled -->
+
       <img id="preview" alt="Preview" />
       <button onclick="uploadImage()" style="display: none" id="uploadBtn">
         🔍 Deteksi Makanan
@@ -261,15 +315,15 @@
       <div id="results"></div>
 
       <div class="feedback-buttons" id="feedbackSection" style="display: none">
-        <p>Apakah gambar ini berisi makanan?</p>
+        <p>Apakah prediksi ini benar?</p>
         <button onclick="sendFeedback(true)">✅ YA</button>
         <button onclick="sendFeedback(false)">❌ TIDAK</button>
         <div id="feedbackResponse"></div>
       </div>
 
       <div class="info-box" style="display: none" id="infoBox">
-        💡 <strong>Tips:</strong> Untuk hasil terbaik, gunakan foto yang jelas
-        dan fokus pada makanan.
+        💡 <strong>Tips:</strong> GradCAM akan menampilkan area yang dilihat AI
+        saat membuat prediksi. Proses ini membutuhkan waktu lebih lama.
       </div>
     </div>
 
@@ -281,10 +335,13 @@
       const infoBox = document.getElementById("infoBox");
       const feedbackSection = document.getElementById("feedbackSection");
       const feedbackResponse = document.getElementById("feedbackResponse");
+      const gradcamCheckbox = document.getElementById("gradcamCheckbox");
 
       let lastPrediction = null;
+      let lastImagePath = null;
+      const alwaysUseGradcam = true; // GradCAM always enabled
 
-      fileInput.addEventListener("change", (e) => {
+      fileInput.addEventListener("change", function (e) {
         const file = e.target.files[0];
         if (file) {
           if (file.size > 16 * 1024 * 1024) {
@@ -311,7 +368,11 @@
         const formData = new FormData();
         formData.append("image", file);
 
-        uploadBtn.innerHTML = '<span class="loading"></span> Mendeteksi...';
+        // Always include GradCAM
+        formData.append("gradcam", "true");
+
+        uploadBtn.innerHTML =
+          '<span class="loading"></span> Mendeteksi dengan GradCAM...';
         uploadBtn.disabled = true;
         results.innerHTML = "";
         feedbackSection.style.display = "none";
@@ -324,8 +385,9 @@
           const data = await response.json();
 
           if (data.success) {
-            displayResults(data.predictions);
+            displayResults(data.predictions, true);
             lastPrediction = data.predictions[0].class;
+            lastImagePath = data.image_path;
             feedbackSection.style.display = "block";
           } else {
             results.innerHTML = `<div class="error">❌ ${data.error}</div>`;
@@ -338,42 +400,66 @@
         uploadBtn.disabled = false;
       }
 
-      function displayResults(predictions) {
+      function displayResults(predictions, showGradcam) {
         results.innerHTML = '<div class="results-title">📊 Hasil Deteksi</div>';
         predictions.forEach((pred, i) => {
           const percentage = (pred.confidence * 100).toFixed(1);
           const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉";
+
+          let gradcamHtml = "";
+          if (showGradcam && pred.gradcam_path) {
+            gradcamHtml = `
+              <div class="gradcam-image">
+                <img src="${pred.gradcam_path}" alt="GradCAM ${pred.class}" />
+                <div class="gradcam-label">🔥 Area fokus AI</div>
+              </div>
+            `;
+          }
+
           results.innerHTML += `
             <div class="prediction">
-              <span class="prediction-rank">${medal}</span>
-              <div style="flex:1">
-                <div class="prediction-name">${pred.class}</div>
-                ${
-                  i === 0
-                    ? `<div class="confidence-bar"><div class="confidence-fill" style="width:${percentage}%"></div></div>`
-                    : ""
-                }
+              <div class="prediction-header">
+                <span class="prediction-rank">${medal}</span>
+                <div style="flex:1">
+                  <div class="prediction-name">${pred.class}</div>
+                  ${
+                    i === 0
+                      ? `<div class="confidence-bar"><div class="confidence-fill" style="width:${percentage}%"></div></div>`
+                      : ""
+                  }
+                </div>
+                <span class="confidence">${percentage}%</span>
               </div>
-              <span class="confidence">${percentage}%</span>
+              ${gradcamHtml}
             </div>`;
         });
       }
 
       async function sendFeedback(isCorrect) {
-        const correctLabel = !isCorrect
-          ? prompt("Masukkan label yang benar:")
-          : lastPrediction;
-        const response = await fetch("/feedback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prediction: lastPrediction,
-            correct: isCorrect,
-            correct_label: correctLabel,
-          }),
-        });
-        const data = await response.json();
-        feedbackResponse.innerText = data.message;
+        let correctLabel = lastPrediction;
+
+        if (!isCorrect) {
+          // Automatically set to "bukan_makanan" without prompting
+          correctLabel = "bukan_makanan";
+          console.log("Auto-labeled as: bukan_makanan");
+        }
+
+        try {
+          const response = await fetch("/feedback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prediction: lastPrediction,
+              correct: isCorrect,
+              correct_label: correctLabel,
+              image_path: lastImagePath,
+            }),
+          });
+          const data = await response.json();
+          feedbackResponse.innerText = "✅ " + data.message;
+        } catch (err) {
+          feedbackResponse.innerText = "❌ Error: " + err.message;
+        }
       }
     </script>
   </body>

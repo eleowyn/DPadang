@@ -20,3 +20,5 @@ Jinja2==3.1.6
 colorama==0.4.6
 typing_extensions==4.15.0
 packaging==25.0
+opencv-python>=4.8.0
+matplotlib>=3.7.0
