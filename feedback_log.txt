@@ -1,0 +1,2 @@
+Tue Nov 18 00:01:01 2025 | pred=Ayam Pop | correct=True | label=Ayam Pop
+Tue Nov 18 00:03:11 2025 | pred=Ayam Goreng | correct=True | label=Ayam Goreng

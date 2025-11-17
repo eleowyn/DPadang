@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from predictor import predict_food, reload_model
 from validation import is_food_image
 from feedback import run_retrain
+from analytics_engine import get_analytics_data
 
 app = Flask(__name__)
 
@@ -17,6 +18,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(GRADCAM_FOLDER, exist_ok=True)
 
 FEEDBACK_LOG = "feedback_log.txt"
+PREDICTION_LOG = "prediction_log.txt"  # Track SETIAP prediksi
 DATASET_PATH = "data/processed/train"
 
 # Flag supaya retrain tidak dijalankan bersamaan
@@ -46,6 +48,11 @@ def background_retrain():
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/analytics")
+def analytics():
+    return render_template("analytics.html")
 
 
 @app.route("/predict", methods=["POST"])
@@ -100,6 +107,18 @@ def predict():
         
         print(f"✅ Prediksi selesai: {preds}")
         
+        # LOG SETIAP PREDIKSI - untuk analytics
+        if preds and len(preds) > 0:
+            top_pred = preds[0]
+            pred_class = top_pred.get('class', 'unknown')
+            pred_confidence = top_pred.get('confidence', 0)
+            
+            # Catat ke prediction log
+            with open(PREDICTION_LOG, "a", encoding="utf-8") as f:
+                f.write(f"{time.asctime()} | class={pred_class} | confidence={pred_confidence:.4f}\n")
+            
+            print(f"✅ Prediksi dicatat: {pred_class} ({pred_confidence*100:.1f}%)")
+        
         # Convert absolute paths to relative URLs
         for pred in preds:
             if 'gradcam_path' in pred and pred['gradcam_path']:
@@ -137,19 +156,25 @@ def feedback_route():
     """Menerima feedback dari user & trigger retrain"""
     try:
         data = request.get_json()
-        prediction = data.get("prediction")
-        correct = data.get("correct")
-        correct_label = data.get("correct_label")
+        prediction = data.get("prediction")  # Apa yang diprediksi model
+        actual = data.get("actual")  # Apa kelas yang sebenarnya (dari user)
+        correct = data.get("correct")  # Boolean: apakah prediksi benar
         image_path = data.get("image_path")
 
-        # Catat feedback
-        with open(FEEDBACK_LOG, "a", encoding="utf-8") as f:
-            f.write(f"{time.asctime()} | pred={prediction} | correct={correct} | label={correct_label}\n")
+        # Jika tidak ada 'actual', gunakan 'prediction' (backward compatibility)
+        if not actual:
+            actual = prediction
 
-        # Jika prediksi salah dan user memberikan label benar
-        if not correct and correct_label:
+        # Catat feedback dengan format: timestamp | pred=class | correct=True/False | label=class
+        with open(FEEDBACK_LOG, "a", encoding="utf-8") as f:
+            f.write(f"{time.asctime()} | pred={prediction} | correct={correct} | label={actual}\n")
+        
+        print(f"✅ Feedback logged: pred={prediction}, correct={correct}, actual={actual}")
+
+        # Jika prediksi salah, simpan gambar ke folder kelas yang benar untuk retrain
+        if not correct and actual:
             # Normalisasi label: "Bukan Makanan" -> "bukan_makanan"
-            label_normalized = correct_label.lower().replace(" ", "_")
+            label_normalized = actual.lower().replace(" ", "_")
             target_dir = os.path.join(DATASET_PATH, label_normalized)
             os.makedirs(target_dir, exist_ok=True)
 
@@ -171,7 +196,8 @@ def feedback_route():
                 
                 return jsonify({
                     "success": True,
-                    "message": f"Feedback diterima dan disimpan ke '{label_normalized}'. Model akan dilatih ulang di background."
+                    "message": f"Feedback diterima dan disimpan ke '{label_normalized}'",
+                    "retrain_status": "Model akan dilatih ulang di background..."
                 })
 
         return jsonify({
@@ -184,7 +210,7 @@ def feedback_route():
         traceback.print_exc()
         return jsonify({
             "success": False,
-            "error": str(e)
+            "message": str(e)
         }), 500
 
 
@@ -243,6 +269,24 @@ def ask_llm():
             "success": False,
             "error": "Error saat memproses pertanyaan. Silakan coba lagi.",
             "details": error_msg[:100]
+        }), 500
+
+
+@app.route("/api/analytics")
+def api_analytics():
+    """API endpoint untuk mendapatkan data analytics"""
+    try:
+        analytics_data = get_analytics_data()
+        return jsonify({
+            "success": True,
+            **analytics_data
+        })
+    except Exception as e:
+        print(f"Error analytics: {e}")
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": str(e)
         }), 500
 
 

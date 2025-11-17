@@ -1,0 +1,2 @@
+Tue Nov 18 00:00:45 2025 | class=Ayam Pop | confidence=0.9981
+Tue Nov 18 00:02:20 2025 | class=Ayam Goreng | confidence=0.9248

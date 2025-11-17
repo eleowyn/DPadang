@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics - Deteksi Makanan Padang</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(
+          135deg,
+          #1a0f00 0%,
+          #2d1810 50%,
+          #1a0f00 100%
+        );
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 20px;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(
+            circle at 20% 30%,
+            rgba(255, 140, 0, 0.15) 0%,
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at 80% 70%,
+            rgba(255, 69, 0, 0.12) 0%,
+            transparent 40%
+          );
+        animation: backgroundPulse 15s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      @keyframes backgroundPulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .container {
+        background: rgba(30, 30, 30, 0.95);
+        border-radius: 15px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9),
+          0 0 60px rgba(255, 140, 0, 0.3);
+        max-width: 1800px;
+        width: 100%;
+        border: 1px solid rgba(255, 140, 0, 0.3);
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: 95vh;
+      }
+
+      .header {
+        padding: 40px 50px;
+        background: linear-gradient(
+          135deg,
+          rgba(60, 35, 20, 0.8) 0%,
+          rgba(40, 25, 15, 0.8) 100%
+        );
+        border-bottom: 2px solid rgba(255, 140, 0, 0.4);
+        flex-shrink: 0;
+      }
+
+      .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .header-left {
+        flex: 1;
+      }
+
+      h1 {
+        background: linear-gradient(
+          135deg,
+          #ff8c00 0%,
+          #ff6b00 50%,
+          #ff4500 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 48px;
+        font-weight: 800;
+        letter-spacing: -1px;
+      }
+
+      .subtitle {
+        color: #999;
+        font-size: 16px;
+        margin-top: 8px;
+      }
+
+      .header-buttons {
+        display: flex;
+        gap: 15px;
+      }
+
+      .btn-nav {
+        background: rgba(255, 140, 0, 0.2);
+        color: #ff8c00;
+        border: 1px solid rgba(255, 140, 0, 0.4);
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+      }
+
+      .btn-nav:hover {
+        background: rgba(255, 140, 0, 0.3);
+        border-color: #ff8c00;
+        transform: translateY(-2px);
+      }
+
+      .content-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 40px 50px;
+      }
+
+      .content-wrapper::-webkit-scrollbar {
+        width: 12px;
+      }
+
+      .content-wrapper::-webkit-scrollbar-track {
+        background: rgba(255, 140, 0, 0.05);
+        border-radius: 10px;
+      }
+
+      .content-wrapper::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #ff8c00 0%, #ff6b00 100%);
+        border-radius: 10px;
+      }
+
+      .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+      }
+
+      .card {
+        background: linear-gradient(
+          145deg,
+          rgba(40, 40, 40, 0.6) 0%,
+          rgba(30, 30, 30, 0.6) 100%
+        );
+        border-radius: 18px;
+        padding: 30px;
+        border: 2px solid rgba(255, 140, 0, 0.3);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      .card-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #ff8c00;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .icon {
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: white;
+      }
+
+      .card-stat {
+        font-size: 36px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .card-label {
+        font-size: 14px;
+        color: #999;
+        margin-top: 8px;
+      }
+
+      .chart-container {
+        background: linear-gradient(
+          145deg,
+          rgba(40, 40, 40, 0.6) 0%,
+          rgba(30, 30, 30, 0.6) 100%
+        );
+        border-radius: 18px;
+        padding: 30px;
+        border: 2px solid rgba(255, 140, 0, 0.3);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        margin-bottom: 25px;
+      }
+
+      .chart-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #ff8c00;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .chart-wrapper {
+        position: relative;
+        height: 400px;
+      }
+
+      .accuracy-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .accuracy-item {
+        background: rgba(50, 50, 50, 0.5);
+        padding: 18px;
+        border-radius: 12px;
+        border-left: 5px solid #ff8c00;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+      }
+
+      .accuracy-item:hover {
+        background: rgba(60, 60, 60, 0.7);
+        transform: translateX(5px);
+      }
+
+      .accuracy-item.low {
+        border-left-color: #ff6b6b;
+        background: rgba(255, 69, 69, 0.1);
+      }
+
+      .accuracy-item.medium {
+        border-left-color: #ffdd00;
+      }
+
+      .accuracy-item.high {
+        border-left-color: #00ff88;
+      }
+
+      .accuracy-name {
+        font-weight: 600;
+        color: #d8d8d8;
+        font-size: 15px;
+      }
+
+      .accuracy-bar {
+        flex: 1;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        margin: 0 15px;
+        overflow: hidden;
+      }
+
+      .accuracy-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ff8c00 0%, #ff6b00 100%);
+        border-radius: 3px;
+        transition: width 0.5s ease;
+      }
+
+      .accuracy-percent {
+        font-weight: 700;
+        font-size: 14px;
+        color: #ff8c00;
+        min-width: 50px;
+        text-align: right;
+      }
+
+      .accuracy-item.low .accuracy-percent {
+        color: #ff6b6b;
+      }
+
+      .accuracy-item.high .accuracy-percent {
+        color: #00ff88;
+      }
+
+      .feedback-stats {
+        background: rgba(50, 50, 50, 0.5);
+        padding: 18px;
+        border-radius: 12px;
+        border-left: 5px solid #00d4ff;
+        margin-bottom: 15px;
+      }
+
+      .feedback-stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+      }
+
+      .feedback-stat-label {
+        color: #d8d8d8;
+        font-size: 14px;
+      }
+
+      .feedback-stat-value {
+        font-weight: 700;
+        font-size: 16px;
+        color: #00d4ff;
+      }
+
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 140, 0, 0.2);
+        border-top-color: #ff8c00;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error-message {
+        background: linear-gradient(
+          145deg,
+          rgba(255, 69, 0, 0.3) 0%,
+          rgba(139, 0, 0, 0.3) 100%
+        );
+        color: #ff8c8c;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 69, 0, 0.6);
+        text-align: center;
+      }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+      }
+
+      .improvement-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 10px;
+      }
+
+      .improvement-badge.good {
+        background: rgba(0, 255, 136, 0.2);
+        color: #00ff88;
+      }
+
+      .improvement-badge.warning {
+        background: rgba(255, 221, 0, 0.2);
+        color: #ffdd00;
+      }
+
+      .improvement-badge.critical {
+        background: rgba(255, 107, 107, 0.2);
+        color: #ff6b6b;
+      }
+
+      /* Confusion Matrix Heatmap Styles */
+      .confusion-matrix-content {
+        width: 100%;
+      }
+
+      .confusion-matrix-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-bottom: 0;
+        table-layout: fixed;
+      }
+
+      .confusion-matrix-table th {
+        background: rgba(255, 140, 0, 0.15);
+        color: #ff8c00;
+        font-weight: 700;
+        border: 1px solid rgba(255, 140, 0, 0.3);
+        padding: 10px 5px;
+        text-align: center;
+        word-wrap: break-word;
+        font-size: 11px;
+      }
+
+      .confusion-matrix-table td {
+        border: 1px solid rgba(255, 140, 0, 0.2);
+        padding: 8px 5px;
+        text-align: center;
+      }
+
+      .confusion-matrix-table tbody tr:hover {
+        background: rgba(255, 140, 0, 0.05);
+      }
+
+      .confusion-matrix-table th:first-child,
+      .confusion-matrix-table td:first-child {
+        text-align: right;
+        padding-right: 10px;
+        min-width: 100px;
+        background: rgba(255, 140, 0, 0.08);
+        color: #ff8c00;
+        font-weight: 600;
+      }
+
+      @media (max-width: 1200px) {
+        .analytics-grid {
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        h1 {
+          font-size: 36px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .header-content {
+          flex-direction: column;
+        }
+
+        .chart-wrapper {
+          height: 300px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="header-content">
+          <div class="header-left">
+            <h1>Analytics Model AI</h1>
+            <p class="subtitle">
+              Kinerja sistem deteksi makanan Padang secara real-time
+            </p>
+          </div>
+          <div class="header-buttons">
+            <a href="/" class="btn-nav">Back</a>
+            <button onclick="refreshAnalytics()" class="btn-nav">
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-wrapper">
+        <!-- Key Metrics -->
+        <div class="analytics-grid">
+          <div class="card">
+            <div class="card-title">
+              <span class="icon">%</span> Akurasi Keseluruhan
+            </div>
+            <div class="card-stat" id="overallAccuracy">-</div>
+            <div class="card-label">Rata-rata akurasi semua kelas</div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span class="icon">✓</span> Total Prediksi
+            </div>
+            <div class="card-stat" id="totalPredictions">-</div>
+            <div class="card-label">Jumlah deteksi yang dilakukan</div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span class="icon">◆</span> Feedback Diterima
+            </div>
+            <div class="card-stat" id="totalFeedback">-</div>
+            <div class="card-label">Koreksi dari pengguna</div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span class="icon">△</span> Tingkat Perbaikan
+            </div>
+            <div class="card-stat" id="improvementRate">-</div>
+            <div class="card-label">% feedback yang digunakan</div>
+          </div>
+        </div>
+
+        <!-- Accuracy Per Kelas -->
+        <div class="chart-container">
+          <div class="chart-title">
+            <span class="icon">●</span> Akurasi Per Kelas Makanan
+          </div>
+          <div id="accuracyPerClass" class="accuracy-list">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <p style="color: #999">Memuat data...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confusion Matrix -->
+        <div class="chart-container">
+          <div class="chart-title">
+            <span class="icon">⊞</span> Confusion Matrix Heatmap
+          </div>
+          <div
+            style="
+              width: 100%;
+              overflow-x: auto;
+              -webkit-overflow-scrolling: touch;
+            "
+          >
+            <div id="confusionChart" style="min-width: min-content"></div>
+          </div>
+        </div>
+
+        <!-- Distribution Chart -->
+        <div class="chart-container">
+          <div class="chart-title">
+            <span class="icon">□</span> Distribusi Prediksi
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="distributionChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Feedback Loop Stats -->
+        <div class="chart-container">
+          <div class="chart-title">
+            <span class="icon">⟲</span> Statistik Feedback Loop
+          </div>
+          <div id="feedbackStats" class="feedback-stats">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <p style="color: #999">Memuat data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let confusionChart = null;
+      let distributionChart = null;
+      const STORAGE_KEY = "analytics_data";
+      const TIMESTAMP_KEY = "analytics_timestamp";
+
+      function getSavedAnalytics() {
+        // Get saved analytics dari sessionStorage (persists dalam browser session)
+        try {
+          const saved = sessionStorage.getItem(STORAGE_KEY);
+          const timestamp = sessionStorage.getItem(TIMESTAMP_KEY);
+
+          if (saved && timestamp) {
+            const now = Date.now();
+            const elapsed = now - parseInt(timestamp);
+
+            // Simpan selama session browser terbuka (sampai user refresh/close browser)
+            console.log(
+              `📦 Using saved analytics (${(elapsed / 1000).toFixed(0)}s ago)`
+            );
+            return JSON.parse(saved);
+          }
+        } catch (error) {
+          console.error("Storage error:", error);
+        }
+        return null;
+      }
+
+      function setSavedAnalytics(data) {
+        // Save analytics ke sessionStorage (persists selama session browser)
+        try {
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          sessionStorage.setItem(TIMESTAMP_KEY, Date.now().toString());
+          console.log("💾 Analytics saved to session");
+        } catch (error) {
+          console.error("Storage save error:", error);
+        }
+      }
+
+      async function loadAnalytics() {
+        try {
+          // Cek saved analytics dulu
+          const savedData = getSavedAnalytics();
+          if (savedData) {
+            displayAnalytics(savedData);
+            // Load fresh data di background tanpa mengganggu tampilan
+            loadAnalyticsFromServer();
+            return;
+          }
+
+          // Jika tidak ada saved data, load dari server
+          loadAnalyticsFromServer();
+        } catch (error) {
+          console.error("Load analytics error:", error);
+          showError(`Error: ${error.message}`);
+        }
+      }
+
+      async function loadAnalyticsFromServer() {
+        try {
+          const response = await fetch("/api/analytics");
+          const data = await response.json();
+
+          if (data.success) {
+            setSavedAnalytics(data);
+            displayAnalytics(data);
+            console.log("✅ Analytics updated from server");
+          } else {
+            // Jika ada error, tapi ada saved data, tampilkan yang saved
+            const savedData = getSavedAnalytics();
+            if (!savedData) {
+              showError(data.error || "Gagal memuat data analytics");
+            }
+          }
+        } catch (error) {
+          console.error("Server load error:", error);
+          // Jika server error tapi ada saved data, tampilkan yang saved
+          const savedData = getSavedAnalytics();
+          if (!savedData) {
+            showError("⚠️ Gagal terhubung ke server");
+          }
+        }
+      }
+
+      function displayAnalytics(data) {
+        displayMetrics(data);
+        displayAccuracyPerClass(data.accuracy_per_class);
+        displayConfusionMatrix(data.confusion_matrix);
+        displayDistributionChart(data.distribution);
+        displayFeedbackStats(data.feedback_stats);
+      }
+      function displayMetrics(data) {
+        document.getElementById("overallAccuracy").textContent =
+          (data.overall_accuracy * 100).toFixed(1) + "%";
+        document.getElementById("totalPredictions").textContent =
+          data.total_predictions || "0";
+        document.getElementById("totalFeedback").textContent =
+          data.total_feedback || "0";
+        document.getElementById("improvementRate").textContent =
+          ((data.total_feedback / (data.total_predictions || 1)) * 100).toFixed(
+            1
+          ) + "%";
+      }
+
+      function displayAccuracyPerClass(accuracyData) {
+        if (!accuracyData || Object.keys(accuracyData).length === 0) {
+          document.getElementById("accuracyPerClass").innerHTML =
+            '<div class="error-message">Data akurasi per kelas belum tersedia</div>';
+          return;
+        }
+
+        let html = "";
+        Object.entries(accuracyData)
+          .sort((a, b) => b[1] - a[1])
+          .forEach(([className, accuracy]) => {
+            const percent = (accuracy * 100).toFixed(1);
+            let statusClass = "high";
+            let badge = "";
+
+            if (percent < 70) {
+              statusClass = "low";
+              badge =
+                '<span class="improvement-badge critical">⚠️ Perlu Peningkatan</span>';
+            } else if (percent < 85) {
+              statusClass = "medium";
+              badge =
+                '<span class="improvement-badge warning">📈 Cukup Baik</span>';
+            } else {
+              badge = '<span class="improvement-badge good">✓ Bagus</span>';
+            }
+
+            html += `
+              <div class="accuracy-item ${statusClass}">
+                <div class="accuracy-name">${className
+                  .replace(/_/g, " ")
+                  .toUpperCase()} ${badge}</div>
+                <div class="accuracy-bar">
+                  <div class="accuracy-fill" style="width: ${percent}%"></div>
+                </div>
+                <div class="accuracy-percent">${percent}%</div>
+              </div>
+            `;
+          });
+
+        document.getElementById("accuracyPerClass").innerHTML = html;
+      }
+
+      function displayConfusionMatrix(confusionData) {
+        const chartContainer = document.getElementById("confusionChart");
+
+        if (!confusionData || Object.keys(confusionData).length === 0) {
+          chartContainer.innerHTML =
+            '<p style="color: #999; padding: 20px;">Data confusion matrix belum tersedia</p>';
+          return;
+        }
+
+        const classNames = Object.keys(confusionData).sort();
+
+        let maxValue = 1;
+        classNames.forEach((actualClass) => {
+          Object.values(confusionData[actualClass]).forEach((val) => {
+            if (val > maxValue) maxValue = val;
+          });
+        });
+
+        let tableHTML = `<div class="confusion-matrix-content" style="padding: 20px 0;">
+          <table class="confusion-matrix-table">
+            <thead>
+              <tr>
+                <th>Actual ↓ / Predicted →</th>
+                ${classNames
+                  .map((name) => `<th>${name.replace(/_/g, " ")}</th>`)
+                  .join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${classNames
+                .map(
+                  (actualClass) => `
+                <tr>
+                  <td style="font-weight: bold; text-align: right;">${actualClass.replace(
+                    /_/g,
+                    " "
+                  )}</td>
+                  ${classNames
+                    .map((predictedClass) => {
+                      const value =
+                        confusionData[actualClass][predictedClass] || 0;
+                      const intensity = maxValue > 0 ? value / maxValue : 0;
+                      const hue = 30;
+                      const saturation = intensity * 70;
+                      const lightness = 20 + (1 - intensity) * 30;
+                      const bgColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                      const textColor = intensity > 0.5 ? "#000" : "#ddd";
+                      return `<td style="background-color: ${bgColor}; color: ${textColor}; font-weight: ${
+                        value > 0 ? "bold" : "normal"
+                      };">${value > 0 ? value : "—"}</td>`;
+                    })
+                    .join("")}
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+          </table>
+          <div style="margin-top: 20px; color: #999; font-size: 12px; line-height: 1.8;">
+            <p><strong>📊 Cara membaca:</strong> Baris = Label sebenarnya (Actual), Kolom = Prediksi model (Predicted)</p>
+            <p><strong>🟠 Warna:</strong> Semakin gelap = semakin banyak prediksi</p>
+            <p><strong>✓ Diagonal:</strong> Prediksi yang benar (True Positive)</p>
+            <p><strong>✕ Off-diagonal:</strong> Prediksi yang salah (Confusion/Error)</p>
+          </div>
+        </div>`;
+
+        chartContainer.innerHTML = tableHTML;
+      }
+
+      function displayDistributionChart(distributionData) {
+        if (!distributionData || Object.keys(distributionData).length === 0) {
+          return;
+        }
+
+        if (distributionChart) {
+          distributionChart.destroy();
+        }
+
+        distributionChart = new Chart(
+          document.getElementById("distributionChart"),
+          {
+            type: "doughnut",
+            data: {
+              labels: Object.keys(distributionData).map((l) =>
+                l.replace(/_/g, " ").toUpperCase()
+              ),
+              datasets: [
+                {
+                  data: Object.values(distributionData),
+                  backgroundColor: [
+                    "#ff8c00",
+                    "#ff6b00",
+                    "#ff4500",
+                    "#00d4ff",
+                    "#00ff88",
+                    "#ffdd00",
+                    "#ff69b4",
+                    "#9d4edd",
+                    "#e0aaff",
+                    "#ffc300",
+                  ],
+                  borderColor: "rgba(30, 30, 30, 0.9)",
+                  borderWidth: 2,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: {
+                    color: "#999",
+                    font: { size: 12 },
+                    padding: 15,
+                  },
+                },
+              },
+            },
+          }
+        );
+      }
+
+      function displayFeedbackStats(feedbackData) {
+        if (!feedbackData) {
+          document.getElementById("feedbackStats").innerHTML =
+            '<div class="error-message">Data feedback belum tersedia</div>';
+          return;
+        }
+
+        const html = `
+          <div class="stat-grid">
+            <div class="feedback-stat-item">
+              <span class="feedback-stat-label"><span class="icon">✓</span> Feedback Benar</span>
+              <span class="feedback-stat-value">${
+                feedbackData.correct || 0
+              }</span>
+            </div>
+            <div class="feedback-stat-item">
+              <span class="feedback-stat-label"><span class="icon">✕</span> Feedback Salah</span>
+              <span class="feedback-stat-value">${
+                feedbackData.incorrect || 0
+              }</span>
+            </div>
+            <div class="feedback-stat-item">
+              <span class="feedback-stat-label"><span class="icon">%</span> Akurasi Feedback</span>
+              <span class="feedback-stat-value">
+                ${
+                  feedbackData.correct + feedbackData.incorrect > 0
+                    ? (
+                        (feedbackData.correct /
+                          (feedbackData.correct + feedbackData.incorrect)) *
+                        100
+                      ).toFixed(1)
+                    : 0
+                }%
+              </span>
+            </div>
+            <div class="feedback-stat-item">
+              <span class="feedback-stat-label"><span class="icon">⟲</span> Total Loop</span>
+              <span class="feedback-stat-value">${
+                (feedbackData.correct || 0) + (feedbackData.incorrect || 0)
+              }</span>
+            </div>
+          </div>
+        `;
+
+        document.getElementById("feedbackStats").innerHTML = html;
+      }
+
+      function showError(message) {
+        const container = document.getElementById("overallAccuracy");
+        container.parentElement.parentElement.innerHTML = `
+          <div class="error-message">${message}</div>
+        `;
+      }
+
+      function refreshAnalytics() {
+        // Clear saved data dan reload dari server
+        sessionStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(TIMESTAMP_KEY);
+        console.log("🔄 Session cleared, reloading analytics...");
+        loadAnalyticsFromServer();
+      }
+
+      // Load analytics on page load
+      loadAnalytics();
+    </script>
+  </body>
+</html>

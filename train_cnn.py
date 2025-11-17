@@ -15,6 +15,7 @@ IMG_SIZE = (224, 224)
 BATCH_SIZE = 16
 EPOCHS = 30
 LEARNING_RATE = 0.0001
+FINETUNING_EPOCHS = 15  # Epochs untuk fine-tuning (lebih singkat)
 
 
 def create_model(num_classes):
@@ -46,12 +47,78 @@ def create_model(num_classes):
     return model
 
 
-def train_model(data_dir, model_save_path):
+def create_finetuned_model(num_classes, existing_model_path=None):
+    """
+    Buat model untuk fine-tuning - unfreeze beberapa layers base model
+    Gunakan ini saat retrain untuk adaptasi lebih baik dengan feedback data
+    
+    Jika num_classes berbeda dengan model yang ada, rebuild output layer
+    """
+    print("Membuat model untuk fine-tuning...")
+    
+    if existing_model_path and os.path.exists(existing_model_path):
+        print(f"Loading existing model dari: {existing_model_path}")
+        model = keras.models.load_model(existing_model_path)
+        
+        # Check apakah jumlah classes sama
+        last_layer = model.layers[-1]
+        output_units = last_layer.units if hasattr(last_layer, 'units') else None
+        
+        if output_units and output_units != num_classes:
+            print(f"⚠️ Output units mismatch: model={output_units}, data={num_classes}")
+            print("Rebuilding output layer...")
+            
+            # Remove last layer (Dense dengan softmax)
+            model = keras.models.Model(
+                inputs=model.input,
+                outputs=model.layers[-2].output
+            )
+            
+            # Add new Dense layer dengan num_classes yang benar
+            model.add(layers.Dense(num_classes, activation='softmax'))
+            print(f"✅ Output layer rebuilt untuk {num_classes} classes")
+        
+        # Unfreeze last 30% layers dari base model untuk fine-tuning
+        total_layers = len(model.layers)
+        unfreeze_at = int(total_layers * 0.7)
+        
+        for layer in model.layers[:unfreeze_at]:
+            layer.trainable = False
+        for layer in model.layers[unfreeze_at:]:
+            layer.trainable = True
+        
+        print(f"Unfroze {total_layers - unfreeze_at} layers untuk fine-tuning")
+    else:
+        model = create_model(num_classes)
+    
+    return model
+
+
+def ensure_validation_folders(data_dir, train_classes):
+    """
+    Pastikan validation folder memiliki semua kelas dari training
+    Buat empty folders jika diperlukan
+    """
+    val_dir = os.path.join(data_dir, 'validation')
+    for class_name in train_classes:
+        class_path = os.path.join(val_dir, class_name)
+        if not os.path.exists(class_path):
+            os.makedirs(class_path, exist_ok=True)
+            print(f"   Created validation folder: {class_name}")
+
+
+def train_model(data_dir, model_save_path, is_finetuning=False):
     """
     Training model dengan data augmentation
+    
+    Args:
+        data_dir: Path ke folder data (harus ada subfolder train, validation, test)
+        model_save_path: Path untuk menyimpan model
+        is_finetuning: Boolean - jika True, gunakan fine-tuning mode dengan learning rate lebih tinggi
     """
     print("\n" + "="*50)
-    print("MULAI TRAINING MODEL")
+    mode = "FINE-TUNING" if is_finetuning else "TRAINING"
+    print(f"MULAI {mode} MODEL")
     print("="*50 + "\n")
     
     # Cek apakah folder data ada
@@ -60,6 +127,12 @@ def train_model(data_dir, model_save_path):
         print(f"Error: Folder {train_dir} tidak ditemukan!")
         print("Jalankan preprocessing terlebih dahulu!")
         return None, None
+    
+    # Ensure validation folder punya semua kelas dari training
+    train_classes = [d for d in os.listdir(train_dir) 
+                     if os.path.isdir(os.path.join(train_dir, d))]
+    print(f"Ensuring validation folders exist untuk {len(train_classes)} classes...")
+    ensure_validation_folders(data_dir, train_classes)
     
     # Data Augmentation untuk training
     train_datagen = ImageDataGenerator(
@@ -134,11 +207,21 @@ def train_model(data_dir, model_save_path):
         print(f"   {class_name}: {weight:.2f}")
     
     # Create model
-    model = create_model(num_classes)
+    if is_finetuning:
+        # Fine-tuning: load existing model dan unfreeze beberapa layers
+        print("🔧 Mode: Fine-tuning existing model...")
+        model = create_finetuned_model(num_classes, model_save_path)
+    else:
+        # Training baru: create fresh model
+        print("🆕 Mode: Fresh training...")
+        model = create_model(num_classes)
     
-    # Compile
+    # Compile dengan learning rate yang berbeda untuk fine-tuning
+    learning_rate = LEARNING_RATE * 10 if is_finetuning else LEARNING_RATE
+    print(f"Learning rate: {learning_rate}")
+    
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
         loss='categorical_crossentropy',
         metrics=['accuracy']
     )
@@ -172,10 +255,14 @@ def train_model(data_dir, model_save_path):
     print("MULAI TRAINING...")
     print("="*50 + "\n")
     
+    # Gunakan lebih sedikit epochs untuk fine-tuning
+    epochs = FINETUNING_EPOCHS if is_finetuning else EPOCHS
+    print(f"Epochs: {epochs}")
+    
     history = model.fit(
         train_generator,
         validation_data=val_generator,
-        epochs=EPOCHS,
+        epochs=epochs,
         callbacks=callbacks,
         class_weight=class_weight_dict,
         verbose=1
