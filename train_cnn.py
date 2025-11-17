@@ -6,6 +6,8 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend to prevent GUI threading errors in Flask
 import matplotlib.pyplot as plt
 import json
 from sklearn.utils.class_weight import compute_class_weight
@@ -15,7 +17,7 @@ IMG_SIZE = (224, 224)
 BATCH_SIZE = 16
 EPOCHS = 30
 LEARNING_RATE = 0.0001
-FINETUNING_EPOCHS = 15  # Epochs untuk fine-tuning (lebih singkat)
+FINETUNING_EPOCHS = 5  # Epochs untuk fine-tuning (lebih singkat & cepat)
 
 
 def create_model(num_classes):
@@ -232,15 +234,18 @@ def train_model(data_dir, model_save_path, is_finetuning=False):
     # Callbacks
     os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
     
+    # Early stopping patience lebih ketat untuk fine-tuning
+    early_stop_patience = 3 if is_finetuning else 10
+    
     callbacks = [
         keras.callbacks.EarlyStopping(
-            patience=10, 
+            patience=early_stop_patience, 
             restore_best_weights=True,
             verbose=1
         ),
         keras.callbacks.ReduceLROnPlateau(
             factor=0.5, 
-            patience=5,
+            patience=3,
             verbose=1
         ),
         keras.callbacks.ModelCheckpoint(
@@ -286,33 +291,38 @@ def train_model(data_dir, model_save_path, is_finetuning=False):
 
 def plot_training_history(history):
     """Plot dan simpan grafik training"""
-    plt.figure(figsize=(12, 4))
-    
-    # Accuracy
-    plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Train Accuracy')
-    plt.plot(history.history['val_accuracy'], label='Val Accuracy')
-    plt.title('Model Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.grid(True)
-    
-    # Loss
-    plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Train Loss')
-    plt.plot(history.history['val_loss'], label='Val Loss')
-    plt.title('Model Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.grid(True)
-    
-    plt.tight_layout()
-    os.makedirs('models', exist_ok=True)
-    plt.savefig('models/training_history.png')
-    print(f"Grafik training disimpan di: models/training_history.png")
-    plt.close()
+    try:
+        # Create figure without displaying (using Agg backend)
+        fig = plt.figure(figsize=(12, 4))
+        
+        # Accuracy
+        plt.subplot(1, 2, 1)
+        plt.plot(history.history['accuracy'], label='Train Accuracy')
+        plt.plot(history.history['val_accuracy'], label='Val Accuracy')
+        plt.title('Model Accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.legend()
+        plt.grid(True)
+        
+        # Loss
+        plt.subplot(1, 2, 2)
+        plt.plot(history.history['loss'], label='Train Loss')
+        plt.plot(history.history['val_loss'], label='Val Loss')
+        plt.title('Model Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True)
+        
+        plt.tight_layout()
+        os.makedirs('models', exist_ok=True)
+        plt.savefig('models/training_history.png')
+        print(f"Grafik training disimpan di: models/training_history.png")
+        plt.close(fig)
+    except Exception as e:
+        print(f"⚠️ Warning: Could not save training plot: {e}")
+        plt.close('all')
 
 
 if __name__ == '__main__':

@@ -1,2 +1,12 @@
 Tue Nov 18 00:00:45 2025 | class=Ayam Pop | confidence=0.9981
 Tue Nov 18 00:02:20 2025 | class=Ayam Goreng | confidence=0.9248
+Tue Nov 18 00:09:08 2025 | class=Gulai Tambusu | confidence=0.9986
+Tue Nov 18 00:11:16 2025 | class=Dendeng Batokok | confidence=0.9993
+Tue Nov 18 00:12:03 2025 | class=Daging Rendang | confidence=0.9985
+Tue Nov 18 00:12:43 2025 | class=Gulai Ikan | confidence=0.9377
+Tue Nov 18 00:13:43 2025 | class=Gulai Tunjang | confidence=0.8385
+Tue Nov 18 00:15:23 2025 | class=Telur Balado | confidence=0.9981
+Tue Nov 18 00:15:48 2025 | class=Telur Dadar | confidence=0.8813
+Tue Nov 18 00:16:18 2025 | class=Telur Dadar | confidence=0.6217
+Tue Nov 18 00:17:33 2025 | class=Daging Rendang | confidence=0.4648
+Tue Nov 18 00:26:30 2025 | class=Bukan Makanan | confidence=0.9999

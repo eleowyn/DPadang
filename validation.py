@@ -13,8 +13,18 @@ GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
 if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")  # atau gunakan "gemini-2.5-flash"
-    print("✅ Model Gemini berhasil diinisialisasi")
+    # Model options in order of preference
+    models_to_try = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro"]
+    model = None
+    for model_name in models_to_try:
+        try:
+            model = genai.GenerativeModel(model_name)
+            print(f"✅ Model Gemini ({model_name}) berhasil diinisialisasi")
+            break
+        except:
+            continue
+    if not model:
+        print("⚠️ Tidak ada model Gemini yang tersedia, fallback ke validasi dasar")
 else:
     model = None
     print("⚠️ GEMINI_API_KEY tidak ditemukan — validasi akan menggunakan fallback method.")
@@ -71,7 +81,7 @@ def is_valid_food_image_basic(image_path):
 def is_food_image(image_path):
     """
     Gunakan Gemini untuk memastikan gambar adalah makanan.
-    Jika Gemini gagal (quota), gunakan fallback method.
+    Jika Gemini gagal (quota/error), gunakan fallback method.
     """
     if not model:
         print("⚠️ Gemini tidak tersedia, menggunakan fallback validation...")
@@ -86,7 +96,14 @@ def is_food_image(image_path):
         print(f"✅ Gemini validation: {answer} → {'Makanan' if is_food else 'Bukan Makanan'}")
         return is_food
     except Exception as e:
-        print(f"❌ Error validasi Gemini: {e}")
+        error_msg = str(e)
+        # Check if it's a quota error
+        if "429" in error_msg or "quota" in error_msg.lower():
+            print(f"⚠️ Gemini quota exceeded: {error_msg[:50]}...")
+            print("💡 Upgrade ke paid Gemini: https://aistudio.google.com/app/billing/overview")
+        else:
+            print(f"❌ Error validasi Gemini: {error_msg[:100]}")
+        
         print("⚠️ Fallback ke basic validation...")
         # Fallback ke basic validation
         return is_valid_food_image_basic(image_path)

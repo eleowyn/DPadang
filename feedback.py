@@ -12,14 +12,16 @@ def run_retrain():
         sync_feedback_to_validation()
         
         # Fine-tune model dengan feedback data (learning rate lebih tinggi)
+        # Fine-tuning hanya 5 epochs - lebih cepat!
         train_model(
             data_dir='data/processed',
             model_save_path='models/saved_models/padang_food_model.keras',
-            is_finetuning=True  # Enable fine-tuning mode
+            is_finetuning=True  # Enable fine-tuning mode (cepat & hemat)
         )
         print("✅ Retrain selesai.")
     except Exception as e:
         print(f"❌ Error saat retrain: {e}")
+        print("⚠️ Retrain gagal - model tidak diubah. Silakan cek data atau logs.")
         import traceback
         traceback.print_exc()
 

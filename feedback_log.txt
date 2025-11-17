@@ -1,2 +1,15 @@
 Tue Nov 18 00:01:01 2025 | pred=Ayam Pop | correct=True | label=Ayam Pop
 Tue Nov 18 00:03:11 2025 | pred=Ayam Goreng | correct=True | label=Ayam Goreng
+Tue Nov 18 00:08:25 2025 | pred=Bukan Makanan | correct=True | label=Bukan Makanan
+Tue Nov 18 00:11:36 2025 | pred=Dendeng Batokok | correct=True | label=Dendeng Batokok
+Tue Nov 18 00:12:13 2025 | pred=Daging Rendang | correct=True | label=Daging Rendang
+Tue Nov 18 00:12:48 2025 | pred=Gulai Ikan | correct=True | label=Gulai Ikan
+Tue Nov 18 00:12:51 2025 | pred=Gulai Ikan | correct=True | label=Gulai Ikan
+Tue Nov 18 00:13:50 2025 | pred=Gulai Tunjang | correct=True | label=Gulai Tunjang
+Tue Nov 18 00:15:28 2025 | pred=Telur Balado | correct=True | label=Telur Balado
+Tue Nov 18 00:15:55 2025 | pred=Telur Dadar | correct=True | label=Telur Dadar
+Tue Nov 18 00:16:21 2025 | pred=Telur Dadar | correct=True | label=Telur Dadar
+Tue Nov 18 00:17:41 2025 | pred=Daging Rendang | correct=False | label=bukan_makanan
+Tue Nov 18 00:26:37 2025 | pred=Bukan Makanan | correct=True | label=Bukan Makanan
+Tue Nov 18 00:31:49 2025 | pred=Bukan Makanan | correct=True | label=Bukan Makanan
+Tue Nov 18 00:33:16 2025 | pred=Bukan Makanan | correct=True | label=Bukan Makanan
